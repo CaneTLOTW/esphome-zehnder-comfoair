@@ -1,0 +1,21 @@
+globals:
+  - id: pdo128_proof_session_id
+    type: std::string
+    restore_value: false
+    initial_value: '""'
+  - id: pdo128_proof_sequence
+    type: uint64_t
+    restore_value: false
+    initial_value: "0"
+esphome:
+  includes:
+    - pdo128_proof.h
+  on_boot:
+    - priority: 800
+      then:
+        - lambda: |-
+            char session_id[17];
+            std::snprintf(session_id, sizeof(session_id), "%08lx%08lx",
+                          static_cast<unsigned long>(esp_random()),
+                          static_cast<unsigned long>(esp_random()));
+            id(pdo128_proof_session_id) = session_id;

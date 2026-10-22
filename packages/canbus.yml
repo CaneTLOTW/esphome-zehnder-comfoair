@@ -77,3 +77,40 @@ canbus:
                   comfoair_on_frame_case(293, id(comfoair), pre_heater_humidity_after,         true);
                   comfoair_on_frame_case(294, id(comfoair), supply_air_humidity,               true);
               }
+          - if:
+              condition:
+                and:
+                  - api.connected:
+                      state_subscription_only: true
+                  - lambda: |-
+                      const auto pdo_id = id(comfoair)->get_pdo_id_from_can_id (can_id);
+                      const float filtered_w = id(power).state;
+                      return pdo_id == 128 && x.size() == 2 &&
+                             id(homeassistant_time).now().is_valid() &&
+                             std::isfinite(filtered_w) && filtered_w >= 0.0f;
+              then:
+                - homeassistant.event:
+                    event: esphome.zehnder_pdo128_rx
+                    variables:
+                      payload: !lambda |-
+                        const auto rx_uptime_ms = pdo128_rx_uptime_ms();
+                        auto rx_time = id(homeassistant_time).utcnow();
+                        if (!rx_time.is_valid() || x.size() != 2) return std::string("");
+                        const auto filtered_w = id(power).state;
+                        if (!std::isfinite(filtered_w) || filtered_w < 0.0f) return std::string("");
+                        const auto rx_at = rx_time.strftime("%Y-%m-%dT%H:%M:%SZ");
+                        char payload[512];
+                        const auto sequence = ++id(pdo128_proof_sequence);
+                        const auto written = std::snprintf(
+                            payload, sizeof(payload),
+                            "{\"schema\":1,\"kind\":\"pdo128_rx\",\"source_id\":\"%s\",\"power_entity\":\"%s\",\"contract_id\":\"zehnder-pdo128-u16le-v1@d123d47cfcf0b57e79b059266bf4be951156bfae\",\"session_id\":\"%s\",\"sequence\":%llu,\"rx_uptime_ms\":%llu,\"rx_at\":\"%s\",\"raw_hex\":\"%02x%02x\",\"filtered_w\":%.1f}",
+                            "${pdo128_proof_source_id}", "${pdo128_proof_power_entity}",
+                            id(pdo128_proof_session_id).c_str(),
+                            static_cast<unsigned long long>(sequence),
+                            static_cast<unsigned long long>(rx_uptime_ms), rx_at.c_str(),
+                            static_cast<unsigned>(x[0]), static_cast<unsigned>(x[1]),
+                            static_cast<double>(filtered_w));
+                        if (written < 0 || static_cast<size_t>(written) >= sizeof(payload)) return std::string("");
+                        return std::string(payload);
+                    data_template:
+                      payload: "{{ payload }}"

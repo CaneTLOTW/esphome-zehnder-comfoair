@@ -6,12 +6,16 @@ substitutions:
   filter_time: 5s
   filter_send_every: "1"
   filter_window_size: "3"
+  pdo128_proof_source_id: ${name}
+  # Verify against the actual HA entity registry before integrating this patch.
+  pdo128_proof_power_entity: "sensor.${name}_power"
 
 packages:
   binary_sensors: !include binary_sensors.yml
   board: !include board.yml
   button: !include button.yml
   canbus: !include canbus.yml
+  pdo128_proof: !include pdo128_proof.yml
   climate: !include climate.yml
   comfoair: !include zehnder_comfoair_q.yml
   common: !include common.yml
