@@ -8,8 +8,10 @@ globals:
     restore_value: false
     initial_value: "0"
 esphome:
+  # A system header is portable across local and remote ESPHome packages.
+  # Do not use a relative package-private .h for the uptime declaration.
   includes:
-    - pdo128_proof.h
+    - <esp_timer.h>
   on_boot:
     - priority: 800
       then:
