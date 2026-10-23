@@ -33,3 +33,21 @@ Review actual private merged config and firmware provenance, obtain separate
 operator permission, then verify real RX/event/HA correlation and endurance.
 A timer, CAN TX, connection uptime or cached Power alone is not RX proof.
 Repeated RX in one UTC second needs increasing sequence and monotonic uptime.
+
+## R1 compile correction (2026-10-24; not yet hardware-accepted)
+
+An operator Device Builder compile of immutable package `34067b97` failed in
+`packages/canbus.yml` because the generated C++ source did not see the
+package-private `pdo128_rx_uptime_ms()` declaration. The correction obtains
+monotonic milliseconds directly from ESP-IDF inside the real RX lambda:
+`static_cast<uint64_t>(esp_timer_get_time() / 1000ULL)`. The package requests
+the system header `<esp_timer.h>` instead of relying on a relative custom
+header. The old `pdo128_proof.h` is left for historical diff/traceability but
+is no longer included or called. Do not clear an operator's ESPHome cache to
+mask this compile issue. A consumer's top-level `esphome.includes:` can also
+explicitly request `<esp_timer.h>` to avoid package-merge ambiguity.
+
+No change to CAN dispatch, filter, interval, Power, schema or event. This new
+revision requires a fresh real Device Builder compile and corresponding private
+package-lock/test updates before any OTA; the previous synthetic CI PASS is
+for the previous immutable SHA only.
