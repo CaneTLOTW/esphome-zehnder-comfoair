@@ -93,7 +93,7 @@ canbus:
                     event: esphome.zehnder_pdo128_rx
                     variables:
                       payload: !lambda |-
-                        const auto rx_uptime_ms = pdo128_rx_uptime_ms();
+                        const auto rx_uptime_ms = static_cast<uint64_t>(esp_timer_get_time() / 1000ULL);
                         auto rx_time = id(homeassistant_time).utcnow();
                         if (!rx_time.is_valid() || x.size() != 2) return std::string("");
                         const auto filtered_w = id(power).state;
