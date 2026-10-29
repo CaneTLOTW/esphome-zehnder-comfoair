@@ -87,7 +87,11 @@ canbus:
                       const float filtered_w = id(power).state;
                       return pdo_id == 128 && x.size() == 2 &&
                              id(homeassistant_time).now().is_valid() &&
-                             std::isfinite(filtered_w) && filtered_w >= 0.0f;
+                             std::isfinite(filtered_w) && filtered_w >= 0.0f &&
+                             (!id(pdo128_proof_has_emitted) ||
+                              static_cast<uint64_t>(esp_timer_get_time() / 1000ULL) -
+                                      id(pdo128_proof_last_emit_uptime_ms) >=
+                                  60000ULL);
               then:
                 - homeassistant.event:
                     event: esphome.zehnder_pdo128_rx
@@ -111,6 +115,8 @@ canbus:
                             static_cast<unsigned>(x[0]), static_cast<unsigned>(x[1]),
                             static_cast<double>(filtered_w));
                         if (written < 0 || static_cast<size_t>(written) >= sizeof(payload)) return std::string("");
+                        id(pdo128_proof_last_emit_uptime_ms) = rx_uptime_ms;
+                        id(pdo128_proof_has_emitted) = true;
                         return std::string(payload);
                     data_template:
                       payload: "{{ payload }}"

@@ -7,6 +7,14 @@ globals:
     type: uint64_t
     restore_value: false
     initial_value: "0"
+  - id: pdo128_proof_last_emit_uptime_ms
+    type: uint64_t
+    restore_value: false
+    initial_value: "0"
+  - id: pdo128_proof_has_emitted
+    type: bool
+    restore_value: false
+    initial_value: "false"
 esphome:
   # A system header is portable across local and remote ESPHome packages.
   # Do not use a relative package-private .h for the uptime declaration.

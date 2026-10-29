@@ -11,7 +11,13 @@ deploy from a floating branch.
 
 The existing non-RTR CAN decoder runs first. An actual two-byte PDO128 response
 then emits `esphome.zehnder_pdo128_rx` over the Native API when HA state
-subscription, valid device UTC and finite filtered Power are available. The
+subscription, valid device UTC and finite nonnegative filtered Power are
+available. Emission is limited to once per 60 seconds, measured from the prior
+successful payload using the 64-bit ESP-IDF monotonic timer. Invalid frames and
+unavailable prerequisites do not consume the interval. The gate is boot-scoped,
+so an API disconnect/reconnect does not reset it; the next valid subscribed RX
+can emit once the interval has elapsed. Using the 64-bit timer avoids the
+32-bit `millis()` rollover issue. The
 payload binds raw wire bytes, filtered Power, source identity, HA entity,
 per-boot session, sequence and monotonic uptime. It is provenance, not
 cryptographic attestation. HA may render the payload as a native mapping.
